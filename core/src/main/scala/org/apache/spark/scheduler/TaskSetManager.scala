@@ -348,7 +348,9 @@ private[spark] class TaskSetManager(
 
   /** Check whether a task once ran an attempt on a given host */
   private def hasAttemptOnHost(taskIndex: Int, host: String): Boolean = {
-    taskAttempts(taskIndex).exists(_.host == host)
+    // Allow speculative tasks to run on same host
+    // taskAttempts(taskIndex).exists(_.host == host)
+    false
   }
 
   private def isTaskExcludededOnExecOrNode(index: Int, execId: String, host: String): Boolean = {
@@ -368,10 +370,10 @@ private[spark] class TaskSetManager(
       execId: String,
       host: String,
       maxLocality: TaskLocality.Value): Option[(Int, TaskLocality.Value, Boolean)] = {
-    // Tries to schedule a regular task first; if it returns None, then schedules
-    // a speculative task
-    dequeueTaskHelper(execId, host, maxLocality, false).orElse(
-      dequeueTaskHelper(execId, host, maxLocality, true))
+    // Tries to schedule a speculative task first; if it returns None, then schedules
+    // a regular task
+    dequeueTaskHelper(execId, host, maxLocality, true).orElse(
+      dequeueTaskHelper(execId, host, maxLocality, false))
   }
 
   protected def dequeueTaskHelper(
